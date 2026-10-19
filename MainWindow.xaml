@@ -6,7 +6,8 @@
         ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
         Style="{DynamicResource SkinWindowStyle}"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
-    <Border Style="{DynamicResource SkinFrameStyle}">
+    <Border Style="{DynamicResource SkinFrameStyle}"
+            Background="{Binding Background, RelativeSource={RelativeSource AncestorType=Window}}">
         <Border Style="{DynamicResource SkinFrameInnerStyle}">
             <StackPanel>
                 <Border Style="{DynamicResource SkinCaptionStyle}">
