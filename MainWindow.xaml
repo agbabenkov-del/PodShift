@@ -71,7 +71,7 @@
 
         <TextBlock Grid.Row="5"
                    Margin="0,18,0,0"
-                   Text="PodShift 0.1 • Bluetooth MVP"
+                   Text="PodShift 0.2 • One-click A2DP test"
                    HorizontalAlignment="Center"
                    FontSize="12"
                    Opacity="0.5"/>

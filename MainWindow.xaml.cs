@@ -8,17 +8,20 @@ public partial class MainWindow : Window
 {
     private readonly BluetoothService _bluetoothService = new();
     private BluetoothDeviceInfo? _selectedDevice;
+    private PodConnectionStatus _lastStatus = PodConnectionStatus.Unknown;
+    private bool _isBusy;
 
     public MainWindow()
     {
         InitializeComponent();
+        Activated += async (_, _) => await RefreshStatusQuietlyAsync();
     }
 
     private async void FindButton_Click(object sender, RoutedEventArgs e)
     {
         await RunBusy(async () =>
         {
-            StatusText.Text = "Ищу сохранённые Bluetooth-устройства...";
+            StatusText.Text = "Ищу сохранённые AirPods...";
             _selectedDevice = await _bluetoothService.FindLikelyAirPodsAsync();
 
             if (_selectedDevice is null)
@@ -41,8 +44,13 @@ public partial class MainWindow : Window
 
         await RunBusy(async () =>
         {
-            StatusText.Text = "Пытаюсь подключить...";
-            var result = await _bluetoothService.TryConnectAsync(_selectedDevice.Id);
+            var progress = new Progress<string>(message => StatusText.Text = message);
+            StatusText.Text = "Запускаю one-click подключение...";
+
+            var result = await _bluetoothService.TryConnectAsync(
+                _selectedDevice.Id,
+                progress);
+
             StatusText.Text = result.Message;
             UpdateUi(result.Status, keepMessage: true);
         });
@@ -55,15 +63,39 @@ public partial class MainWindow : Window
 
         await RunBusy(async () =>
         {
-            StatusText.Text = "Пытаюсь отключить...";
-            var result = await _bluetoothService.TryDisconnectAsync(_selectedDevice.Id);
+            var progress = new Progress<string>(message => StatusText.Text = message);
+            StatusText.Text = "Отключаю AirPods от Windows...";
+
+            var result = await _bluetoothService.TryDisconnectAsync(
+                _selectedDevice.Id,
+                progress);
+
             StatusText.Text = result.Message;
             UpdateUi(result.Status, keepMessage: true);
         });
     }
 
+    private async Task RefreshStatusQuietlyAsync()
+    {
+        if (_isBusy || _selectedDevice is null)
+            return;
+
+        try
+        {
+            var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
+            if (status != _lastStatus)
+                UpdateUi(status);
+        }
+        catch
+        {
+            // Фоновое обновление не должно мешать работе окна.
+        }
+    }
+
     private void UpdateUi(PodConnectionStatus status, bool keepMessage = false)
     {
+        _lastStatus = status;
+
         if (!keepMessage)
         {
             StatusText.Text = status switch
@@ -80,11 +112,14 @@ public partial class MainWindow : Window
 
     private async Task RunBusy(Func<Task> action)
     {
+        _isBusy = true;
+
         try
         {
             FindButton.IsEnabled = false;
             ConnectButton.IsEnabled = false;
             DisconnectButton.IsEnabled = false;
+
             await action();
         }
         catch (Exception ex)
@@ -93,14 +128,32 @@ public partial class MainWindow : Window
         }
         finally
         {
+            _isBusy = false;
             FindButton.IsEnabled = true;
+            await RefreshButtonsQuietlyAsync();
+        }
+    }
 
-            if (_selectedDevice is not null)
-            {
-                var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
-                ConnectButton.IsEnabled = status != PodConnectionStatus.Connected;
-                DisconnectButton.IsEnabled = status == PodConnectionStatus.Connected;
-            }
+    private async Task RefreshButtonsQuietlyAsync()
+    {
+        if (_selectedDevice is null)
+        {
+            ConnectButton.IsEnabled = false;
+            DisconnectButton.IsEnabled = false;
+            return;
+        }
+
+        try
+        {
+            var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
+            _lastStatus = status;
+            ConnectButton.IsEnabled = status != PodConnectionStatus.Connected;
+            DisconnectButton.IsEnabled = status == PodConnectionStatus.Connected;
+        }
+        catch
+        {
+            ConnectButton.IsEnabled = true;
+            DisconnectButton.IsEnabled = false;
         }
     }
 }
