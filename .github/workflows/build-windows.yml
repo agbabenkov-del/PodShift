@@ -35,6 +35,18 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish
 
+      - name: Verify skins and layout
+        shell: pwsh
+        run: ./.github/scripts/verify-ui.ps1 -OutputPath ./ui-preview
+
+      - name: Upload UI previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PodShift-ui-preview
+          path: ui-preview/*.png
+          if-no-files-found: warn
+
       - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
