@@ -1,0 +1,79 @@
+<Window x:Class="PodShift.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PodShift"
+        Height="360"
+        Width="420"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="PodShift"
+                   FontSize="28"
+                   FontWeight="SemiBold"/>
+
+        <TextBlock Grid.Row="1"
+                   Margin="0,8,0,0"
+                   Text="Быстрое переключение AirPods на Windows"
+                   Opacity="0.65"
+                   FontSize="14"/>
+
+        <Border Grid.Row="2"
+                Margin="0,24,0,0"
+                Padding="16"
+                CornerRadius="14"
+                BorderThickness="1"
+                BorderBrush="#33000000">
+            <StackPanel>
+                <TextBlock x:Name="DeviceNameText"
+                           Text="AirPods не выбраны"
+                           FontSize="19"
+                           FontWeight="SemiBold"/>
+                <TextBlock x:Name="StatusText"
+                           Margin="0,8,0,0"
+                           Text="Нажми «Найти AirPods»"
+                           FontSize="14"
+                           Opacity="0.7"
+                           TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Row="4"
+                    Orientation="Vertical"
+                    Margin="0,20,0,0">
+            <Button x:Name="FindButton"
+                    Height="46"
+                    Content="Найти AirPods"
+                    Click="FindButton_Click"/>
+
+            <Button x:Name="ConnectButton"
+                    Margin="0,10,0,0"
+                    Height="46"
+                    Content="Подключить к ПК"
+                    IsEnabled="False"
+                    Click="ConnectButton_Click"/>
+
+            <Button x:Name="DisconnectButton"
+                    Margin="0,10,0,0"
+                    Height="46"
+                    Content="Отключить"
+                    IsEnabled="False"
+                    Click="DisconnectButton_Click"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="5"
+                   Margin="0,18,0,0"
+                   Text="PodShift 0.1 • Bluetooth MVP"
+                   HorizontalAlignment="Center"
+                   FontSize="12"
+                   Opacity="0.5"/>
+    </Grid>
+</Window>
