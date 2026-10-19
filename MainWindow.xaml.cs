@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace PodShift;
 
@@ -8,10 +9,35 @@ public partial class MainWindow : Window
 {
     private readonly BluetoothService _bluetoothService = new();
     private BluetoothDeviceInfo? _selectedDevice;
+    private bool _initializingSkin = true;
 
     public MainWindow()
     {
         InitializeComponent();
+        SkinSelector.SelectedIndex = ThemeService.CurrentSkin == AppSkin.Retro95 ? 1 : 0;
+        _initializingSkin = false;
+    }
+
+    private void SkinSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializingSkin)
+            return;
+
+        var skin = SkinSelector.SelectedIndex == 1 ? AppSkin.Retro95 : AppSkin.Default;
+        var saved = ThemeService.SelectSkin(skin);
+        SkinSelector.ToolTip = saved
+            ? "Выбранный скин сохраняется после закрытия."
+            : "Скин применён. Не удалось сохранить выбор: проверь доступ к папке настроек.";
+    }
+
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
     }
 
     private async void FindButton_Click(object sender, RoutedEventArgs e)
