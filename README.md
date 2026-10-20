@@ -10,17 +10,17 @@
 
 PodShift is a small Windows utility that finds your already-paired AirPods, shows their connection state, and switches the stereo A2DP connection between Windows and other devices without forcing you through Bluetooth Settings every time.
 
-> **Current release: v0.2-alpha.** One-click connect and disconnect are implemented and have been confirmed on a real AirPods/iPhone/Windows setup. Bluetooth behavior still depends on the Windows Bluetooth stack, adapter, drivers, and AirPods model, so broader hardware testing is welcome.
+> **Latest published release: v0.2-alpha.** One-click connect and disconnect are implemented and have been confirmed on a real AirPods/iPhone/Windows setup. This branch contains **v0.3-alpha**, which turns the window into a compact desktop widget with a tray icon; it has not been released yet. Bluetooth behavior still depends on the Windows Bluetooth stack, adapter, drivers, and AirPods model, so broader hardware testing is welcome.
 
 ## Download
 
-Download **`PodShift-win-x64.zip`** from the [v0.2-alpha release](../../releases/tag/v0.2-alpha).
+Download **`PodShift-win-x64.zip`** from the [releases page](../../releases). The [v0.2-alpha release](../../releases/tag/v0.2-alpha) uses the older window with three separate buttons; the widget and tray behavior described below arrives with v0.3-alpha.
 
 1. Extract the ZIP.
 2. Run `PodShift.exe`.
 3. If Windows SmartScreen warns about an unknown publisher, that is expected for the current unsigned alpha build.
 4. Pair your AirPods with Windows once using normal Bluetooth Settings if you have not done so before.
-5. Click **Find AirPods**, then **Connect to PC**.
+5. Click **Find AirPods** if PodShift has not found them on its own, then **Connect to PC**.
 
 The build is self-contained. You do **not** need to install .NET separately.
 
@@ -38,7 +38,29 @@ The normal Windows routine is usually:
 
 PodShift turns that into a tiny window and one click.
 
-## What v0.2-alpha does
+## The desktop widget (v0.3-alpha)
+
+PodShift is a small frameless widget, not a settings dialog. It shows the AirPods name, their Windows connection state, and one primary button:
+
+- **Найти AirPods** (Find AirPods) when no AirPods have been found yet. PodShift also searches once automatically at launch.
+- **Подключить к ПК** (Connect to PC) when the AirPods are not connected to Windows.
+- **Отключить** (Disconnect) when the AirPods are connected to Windows.
+
+While a Bluetooth operation is running the button is disabled, so repeated clicks cannot start a second one.
+
+Widget and tray behavior:
+
+- Drag the widget by its header or background to move it.
+- The last position is remembered. If a monitor was removed or the layout changed, the widget is moved back into a visible work area.
+- The pin button in the header toggles **Always on top** (**Поверх окон**). The choice is remembered.
+- The **X** button hides the widget to the tray; it does **not** quit PodShift.
+- Double-click the tray icon, or choose **Показать PodShift** in the tray menu, to bring the widget back.
+- The tray menu also has a connect/disconnect action (shown once AirPods are known) and the **Поверх окон** toggle. If you use that action while the widget is hidden, the result appears as a tray notification.
+- To fully exit PodShift, right-click the tray icon and choose **Выход**.
+
+Settings (position and always-on-top) are stored in `%LOCALAPPDATA%\PodShift\settings.json`. If the file is missing or damaged, PodShift starts with defaults.
+
+## What it does
 
 - Finds AirPods among already-paired Bluetooth devices.
 - Prioritizes AirPods Pro, AirPods Max, and AirPods by name.
@@ -102,9 +124,10 @@ PodShift does **not** perform initial Bluetooth pairing.
 - Reliability can vary with Bluetooth adapters, drivers, Windows builds, and AirPods models.
 - Another device may temporarily hold the AirPods connection and delay or prevent Windows from taking it.
 - The app currently selects the highest-scoring AirPods device automatically. There is no device picker yet.
-- Microphone / Hands-Free mode is not managed in v0.2-alpha.
+- Microphone / Hands-Free mode is not managed yet.
 - The executable is not code-signed yet.
-- There is no installer or tray icon yet.
+- There is no installer yet.
+- The widget and tray behavior has not been verified on real hardware across multiple monitors and DPI settings yet.
 
 If one-click switching fails, PodShift opens the normal Windows Bluetooth Settings as a fallback rather than pretending everything went splendidly.
 
@@ -133,7 +156,7 @@ dotnet publish PodShift.csproj `
 
 - C#
 - .NET 8
-- WPF / XAML
+- WPF / XAML (Windows Forms `NotifyIcon` for the tray icon)
 - Windows.Devices.Bluetooth / WinRT
 - Win32 Bluetooth APIs via P/Invoke
 - GitHub Actions
@@ -152,7 +175,8 @@ The Bluetooth switching logic lives in [`BluetoothService.cs`](BluetoothService.
 - [x] Automated prerelease packaging
 - [ ] Test on more AirPods models, Windows versions, and Bluetooth adapters
 - [ ] Device picker for multiple AirPods
-- [ ] Tray icon and quick switching
+- [x] Compact desktop widget with remembered position and optional always-on-top
+- [x] Tray icon with close-to-tray and quick connect/disconnect
 - [ ] Optional Retro 95 skin
 - [ ] Installer and code signing
 - [ ] Demo GIF / polished screenshots
