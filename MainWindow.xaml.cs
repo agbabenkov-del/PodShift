@@ -13,7 +13,6 @@ public partial class MainWindow : Window
     private const string DisconnectText = "Отключить";
 
     private readonly BluetoothService _bluetoothService = new();
-    private readonly BatteryService _batteryService = new();
     private readonly AppSettings _settings;
     private readonly TrayService _tray;
 
@@ -44,8 +43,6 @@ public partial class MainWindow : Window
 
         Application.Current.SessionEnding += (_, _) => _isExiting = true;
     }
-
-    // ----- Window behavior -------------------------------------------------
 
     private void RestorePosition()
     {
@@ -157,8 +154,6 @@ public partial class MainWindow : Window
         Close();
     }
 
-    // ----- Bluetooth actions -----------------------------------------------
-
     private async void PrimaryButton_Click(object sender, RoutedEventArgs e)
     {
         await RunPrimaryActionAsync();
@@ -182,7 +177,6 @@ public partial class MainWindow : Window
         return RunBusy(async () =>
         {
             SetStatus("Ищу сохранённые AirPods...");
-            SetBattery(null);
             _selectedDevice = await _bluetoothService.FindLikelyAirPodsAsync();
 
             if (_selectedDevice is null)
@@ -195,7 +189,6 @@ public partial class MainWindow : Window
             SetDeviceName(_selectedDevice.Name);
             var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
             UpdateUi(status);
-            await RefreshBatteryQuietlyAsync();
         });
     }
 
@@ -214,7 +207,6 @@ public partial class MainWindow : Window
 
             SetStatus(result.Message);
             UpdateUi(result.Status, keepMessage: true);
-            await RefreshBatteryQuietlyAsync();
         });
     }
 
@@ -233,7 +225,6 @@ public partial class MainWindow : Window
 
             SetStatus(result.Message);
             UpdateUi(result.Status, keepMessage: true);
-            await RefreshBatteryQuietlyAsync();
         });
     }
 
@@ -247,30 +238,11 @@ public partial class MainWindow : Window
             var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
             if (status != _lastStatus)
                 UpdateUi(status);
-
-            await RefreshBatteryQuietlyAsync();
         }
         catch
         {
-            // Background refresh must never interfere with switching.
         }
     }
-
-    private async Task RefreshBatteryQuietlyAsync()
-    {
-        var device = _selectedDevice;
-
-        if (device is null || _lastStatus != PodConnectionStatus.Connected)
-        {
-            SetBattery(null);
-            return;
-        }
-
-        var percent = await _batteryService.GetBatteryPercentAsync(device.Id);
-        SetBattery(percent);
-    }
-
-    // ----- UI state --------------------------------------------------------
 
     private void UpdateUi(PodConnectionStatus status, bool keepMessage = false)
     {
@@ -285,9 +257,6 @@ public partial class MainWindow : Window
                 _ => "Статус подключения неизвестен"
             });
         }
-
-        if (status != PodConnectionStatus.Connected)
-            SetBattery(null);
 
         ApplyPrimaryState();
     }
@@ -327,22 +296,6 @@ public partial class MainWindow : Window
         DeviceNameText.ToolTip = name;
     }
 
-    private void SetBattery(int? percent)
-    {
-        if (percent is int value)
-        {
-            BatteryText.Text = $"🔋 {value}%";
-            BatteryText.ToolTip = $"Заряд AirPods по данным Windows: {value}%";
-        }
-        else
-        {
-            BatteryText.Text = "🔋 —";
-            BatteryText.ToolTip = _lastStatus == PodConnectionStatus.Connected
-                ? "Windows не сообщил уровень заряда для этого Bluetooth-профиля"
-                : "Заряд обновится после подключения AirPods";
-        }
-    }
-
     private async Task RunBusy(Func<Task> action)
     {
         if (_isBusy)
@@ -362,7 +315,6 @@ public partial class MainWindow : Window
         finally
         {
             await RefreshLastStatusQuietlyAsync();
-            await RefreshBatteryQuietlyAsync();
 
             _isBusy = false;
             ApplyPrimaryState();
