@@ -2,6 +2,24 @@
 
 All notable changes to PodShift are documented here.
 
+## [Unreleased] - v0.3-alpha
+
+### Added
+- Compact frameless desktop widget (about 300 × 160) with a single primary action button: «Найти AirPods», «Подключить к ПК» or «Отключить».
+- Drag-to-move, remembered widget position, and clamping to a visible work area after monitor/layout changes.
+- Optional «Поверх окон» (always on top) toggle, remembered between launches.
+- Tray icon: double-click to show, menu with «Показать PodShift», connect/disconnect, «Поверх окон» and «Выход».
+- Close (X) hides the widget to the tray instead of quitting; «Выход» in the tray menu exits.
+- Settings stored in `%LOCALAPPDATA%\PodShift\settings.json`, with safe fallback to defaults.
+- Automatic AirPods search at launch.
+
+### Changed
+- The primary button is disabled while a Bluetooth operation is running.
+- Version metadata bumped to 0.3.0-alpha.
+
+### Unchanged
+- Bluetooth switching logic in `BluetoothService.cs` is untouched.
+
 ## [v0.2-alpha] - 2026-10-20
 
 ### Added
