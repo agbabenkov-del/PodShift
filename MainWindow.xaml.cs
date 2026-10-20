@@ -13,6 +13,7 @@ public partial class MainWindow : Window
     private const string DisconnectText = "Отключить";
 
     private readonly BluetoothService _bluetoothService = new();
+    private readonly BatteryService _batteryService = new();
     private readonly AppSettings _settings;
     private readonly TrayService _tray;
 
@@ -41,7 +42,6 @@ public partial class MainWindow : Window
         Activated += async (_, _) => await RefreshStatusQuietlyAsync();
         Closing += MainWindow_Closing;
 
-        // Never block Windows sign-out/shutdown by cancelling the close.
         Application.Current.SessionEnding += (_, _) => _isExiting = true;
     }
 
@@ -59,7 +59,6 @@ public partial class MainWindow : Window
         }
         else
         {
-            // First launch: bottom-right corner of the work area, like a small desktop widget.
             var workArea = SystemParameters.WorkArea;
             left = workArea.Right - Width - 24;
             top = workArea.Bottom - Height - 24;
@@ -100,7 +99,6 @@ public partial class MainWindow : Window
 
     public void ShowWidget()
     {
-        // The monitor layout may have changed while the widget was hidden.
         EnsureOnScreen();
 
         if (!IsVisible)
@@ -128,14 +126,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        // The X button hides the widget to the tray; "Выход" in the tray menu really quits.
         e.Cancel = true;
         Hide();
     }
 
     private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        // Buttons handle their own clicks, so this only fires for the header/background.
         if (e.ButtonState != MouseButtonState.Pressed)
             return;
 
@@ -145,7 +141,6 @@ public partial class MainWindow : Window
         }
         catch (InvalidOperationException)
         {
-            // The mouse button was released before the drag started.
             return;
         }
 
@@ -162,7 +157,7 @@ public partial class MainWindow : Window
         Close();
     }
 
-    // ----- Bluetooth actions (logic preserved from v0.2) -------------------
+    // ----- Bluetooth actions -----------------------------------------------
 
     private async void PrimaryButton_Click(object sender, RoutedEventArgs e)
     {
@@ -187,6 +182,7 @@ public partial class MainWindow : Window
         return RunBusy(async () =>
         {
             SetStatus("Ищу сохранённые AirPods...");
+            SetBattery(null);
             _selectedDevice = await _bluetoothService.FindLikelyAirPodsAsync();
 
             if (_selectedDevice is null)
@@ -199,6 +195,7 @@ public partial class MainWindow : Window
             SetDeviceName(_selectedDevice.Name);
             var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
             UpdateUi(status);
+            await RefreshBatteryQuietlyAsync();
         });
     }
 
@@ -217,6 +214,7 @@ public partial class MainWindow : Window
 
             SetStatus(result.Message);
             UpdateUi(result.Status, keepMessage: true);
+            await RefreshBatteryQuietlyAsync();
         });
     }
 
@@ -235,6 +233,7 @@ public partial class MainWindow : Window
 
             SetStatus(result.Message);
             UpdateUi(result.Status, keepMessage: true);
+            await RefreshBatteryQuietlyAsync();
         });
     }
 
@@ -248,11 +247,27 @@ public partial class MainWindow : Window
             var status = await _bluetoothService.GetStatusAsync(_selectedDevice.Id);
             if (status != _lastStatus)
                 UpdateUi(status);
+
+            await RefreshBatteryQuietlyAsync();
         }
         catch
         {
-            // Фоновое обновление не должно мешать работе окна.
+            // Background refresh must never interfere with switching.
         }
+    }
+
+    private async Task RefreshBatteryQuietlyAsync()
+    {
+        var device = _selectedDevice;
+
+        if (device is null || _lastStatus != PodConnectionStatus.Connected)
+        {
+            SetBattery(null);
+            return;
+        }
+
+        var percent = await _batteryService.GetBatteryPercentAsync(device.Id);
+        SetBattery(percent);
     }
 
     // ----- UI state --------------------------------------------------------
@@ -271,10 +286,12 @@ public partial class MainWindow : Window
             });
         }
 
+        if (status != PodConnectionStatus.Connected)
+            SetBattery(null);
+
         ApplyPrimaryState();
     }
 
-    /// <summary>Updates the primary button and the tray action to match device/status/busy state.</summary>
     private void ApplyPrimaryState()
     {
         string? trayText = null;
@@ -310,6 +327,22 @@ public partial class MainWindow : Window
         DeviceNameText.ToolTip = name;
     }
 
+    private void SetBattery(int? percent)
+    {
+        if (percent is int value)
+        {
+            BatteryText.Text = $"🔋 {value}%";
+            BatteryText.ToolTip = $"Заряд AirPods по данным Windows: {value}%";
+        }
+        else
+        {
+            BatteryText.Text = "🔋 —";
+            BatteryText.ToolTip = _lastStatus == PodConnectionStatus.Connected
+                ? "Windows не сообщил уровень заряда для этого Bluetooth-профиля"
+                : "Заряд обновится после подключения AirPods";
+        }
+    }
+
     private async Task RunBusy(Func<Task> action)
     {
         if (_isBusy)
@@ -329,11 +362,11 @@ public partial class MainWindow : Window
         finally
         {
             await RefreshLastStatusQuietlyAsync();
+            await RefreshBatteryQuietlyAsync();
 
             _isBusy = false;
             ApplyPrimaryState();
 
-            // If the action was started from the tray while the widget is hidden, report the result there.
             if (!IsVisible)
                 _tray.ShowBalloon(StatusText.Text);
         }
