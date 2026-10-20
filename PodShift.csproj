@@ -3,18 +3,27 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- Windows Forms is used only for the NotifyIcon tray icon. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>PodShift</AssemblyName>
     <RootNamespace>PodShift</RootNamespace>
     <ApplicationIcon>Assets\podshift.ico</ApplicationIcon>
-    <Version>0.2.0-alpha</Version>
-    <AssemblyVersion>0.2.0.0</AssemblyVersion>
-    <FileVersion>0.2.0.0</FileVersion>
+    <Version>0.3.0-alpha</Version>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <FileVersion>0.3.0.0</FileVersion>
     <Product>PodShift</Product>
     <Description>One-click AirPods switching for Windows.</Description>
     <Authors>PodShift contributors</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/agbabenkov-del/PodShift</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- With both WPF and Windows Forms enabled, these implicit namespaces make
+         Application, Button, etc. ambiguous. WinForms types are used fully qualified instead. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
 </Project>
