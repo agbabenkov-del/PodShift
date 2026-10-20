@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/v0.3-desktop-widget
   pull_request:
     branches:
       - main
