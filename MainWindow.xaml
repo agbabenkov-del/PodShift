@@ -13,7 +13,6 @@
         SnapsToDevicePixels="True">
 
     <Window.Resources>
-        <!-- Small flat icon button used in the header (close). -->
         <Style x:Key="HeaderIconButton" TargetType="Button">
             <Setter Property="Width" Value="26"/>
             <Setter Property="Height" Value="26"/>
@@ -41,7 +40,6 @@
             </Setter>
         </Style>
 
-        <!-- Same look, but for the pin (Always on top) toggle. -->
         <Style x:Key="HeaderIconToggle" TargetType="ToggleButton">
             <Setter Property="Width" Value="26"/>
             <Setter Property="Height" Value="26"/>
@@ -70,7 +68,6 @@
             </Setter>
         </Style>
 
-        <!-- The one primary action button. -->
         <Style x:Key="PrimaryButton" TargetType="Button">
             <Setter Property="Height" Value="34"/>
             <Setter Property="Foreground" Value="White"/>
@@ -105,7 +102,6 @@
         </Style>
     </Window.Resources>
 
-    <!-- Outer margin leaves room for the drop shadow on the transparent window. -->
     <Border x:Name="RootBorder"
             Margin="8"
             Padding="12,6,12,12"
@@ -128,7 +124,6 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Header: title (also a drag area) + pin + close. -->
             <Grid Grid.Row="0" Height="26">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -157,14 +152,31 @@
                         Click="CloseButton_Click"/>
             </Grid>
 
-            <TextBlock x:Name="DeviceNameText"
-                       Grid.Row="1"
-                       Text="AirPods не выбраны"
-                       Foreground="White"
-                       FontSize="17"
-                       FontWeight="SemiBold"
-                       TextWrapping="NoWrap"
-                       TextTrimming="CharacterEllipsis"/>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock x:Name="DeviceNameText"
+                           Grid.Column="0"
+                           Margin="0,0,8,0"
+                           Text="AirPods не выбраны"
+                           Foreground="White"
+                           FontSize="17"
+                           FontWeight="SemiBold"
+                           TextWrapping="NoWrap"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <TextBlock x:Name="BatteryText"
+                           Grid.Column="1"
+                           VerticalAlignment="Center"
+                           Text="🔋 —"
+                           Foreground="#CCFFFFFF"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           ToolTip="Windows пока не сообщил уровень заряда"/>
+            </Grid>
 
             <TextBlock x:Name="StatusText"
                        Grid.Row="2"
