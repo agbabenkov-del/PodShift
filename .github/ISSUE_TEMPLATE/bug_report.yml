@@ -1,0 +1,89 @@
+name: Bug report
+description: Report a problem with AirPods discovery, connection, disconnect, or UI behavior.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing PodShift. Bluetooth bugs are annoyingly hardware-specific, so the details below matter.
+
+  - type: input
+    id: version
+    attributes:
+      label: PodShift version
+      placeholder: v0.2-alpha
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+
+  - type: input
+    id: airpods
+    attributes:
+      label: AirPods model
+      placeholder: AirPods Pro 2
+    validations:
+      required: true
+
+  - type: input
+    id: bluetooth
+    attributes:
+      label: Bluetooth adapter or PC/laptop model
+      description: If you know the Bluetooth adapter, include it. Otherwise the computer model is still useful.
+      placeholder: Intel AX211 / Dell XPS 15 / unknown
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: What failed?
+      options:
+        - Finding AirPods
+        - Connect to PC
+        - Disconnect
+        - Connection status
+        - UI / layout
+        - App startup
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. AirPods were connected to ...
+        2. Opened PodShift
+        3. Clicked ...
+        4. Observed ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+      description: Include the exact status/error text shown by PodShift if possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Screenshots and any useful details are welcome. Do not post sensitive personal information.

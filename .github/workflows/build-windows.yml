@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -32,8 +35,47 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=true
           -o publish
 
-      - name: Upload Windows build
+      - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:
           name: PodShift-win-x64
           path: publish/*
+          retention-days: 30
+
+      - name: Package release ZIP
+        if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Release ')
+        shell: pwsh
+        run: |
+          Compress-Archive -Path publish\* -DestinationPath PodShift-win-x64.zip -Force
+          $hash = (Get-FileHash PodShift-win-x64.zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  PodShift-win-x64.zip" | Set-Content SHA256SUMS.txt
+
+      - name: Create or update GitHub prerelease
+        if: github.event_name == 'push' && startsWith(github.event.head_commit.message, 'Release ')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $message = git log -1 --pretty=%s
+          if ($message -notmatch '^Release\s+(v[0-9A-Za-z.\-]+)') {
+            throw "Release commit message must start with 'Release v...'"
+          }
+
+          $tag = $Matches[1]
+          $notesFile = "RELEASE_NOTES_$tag.md"
+          if (-not (Test-Path $notesFile)) {
+            $notesFile = "CHANGELOG.md"
+          }
+
+          gh release view $tag --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag PodShift-win-x64.zip SHA256SUMS.txt --repo $env:GITHUB_REPOSITORY --clobber
+          }
+          else {
+            gh release create $tag PodShift-win-x64.zip SHA256SUMS.txt `
+              --repo $env:GITHUB_REPOSITORY `
+              --target $env:GITHUB_SHA `
+              --title "PodShift $tag" `
+              --notes-file $notesFile `
+              --prerelease
+          }

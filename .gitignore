@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+publish/
+PodShift-win-x64.zip
+SHA256SUMS.txt
+TestResults/
+*.log

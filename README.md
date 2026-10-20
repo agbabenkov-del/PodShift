@@ -1,113 +1,131 @@
 # PodShift
 
+[![Build](https://github.com/agbabenkov-del/PodShift/actions/workflows/build-windows.yml/badge.svg)](https://github.com/agbabenkov-del/PodShift/actions/workflows/build-windows.yml)
+[![Release](https://img.shields.io/github/v/release/agbabenkov-del/PodShift?include_prereleases&label=release)](https://github.com/agbabenkov-del/PodShift/releases)
+[![License](https://img.shields.io/github/license/agbabenkov-del/PodShift)](LICENSE)
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
+[![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4)](https://www.microsoft.com/windows)
+
 **One-click AirPods switching for Windows.**
 
-PodShift is a tiny Windows utility that finds your paired AirPods, shows their connection status, and experimentally switches the stereo A2DP profile to or from your PC without making you dig through Windows Bluetooth settings every time.
+PodShift is a small Windows utility that finds your already-paired AirPods, shows their connection state, and switches the stereo A2DP connection between Windows and other devices without forcing you through Bluetooth Settings every time.
 
-> **Status: v0.2 alpha.** One-click A2DP connect/disconnect is implemented and the Windows build passes GitHub Actions. Bluetooth behavior can still vary between PCs, adapters, Windows versions, and AirPods models, so this is an experimental build rather than a promise that Windows Bluetooth has suddenly become reasonable.
+> **Current release: v0.2-alpha.** One-click connect and disconnect are implemented and have been confirmed on a real AirPods/iPhone/Windows setup. Bluetooth behavior still depends on the Windows Bluetooth stack, adapter, drivers, and AirPods model, so broader hardware testing is welcome.
 
-<!-- TODO: add screenshot / GIF here -->
-<!-- ![PodShift screenshot](Assets/screenshot.png) -->
+## Download
+
+Download **`PodShift-win-x64.zip`** from the [v0.2-alpha release](../../releases/tag/v0.2-alpha).
+
+1. Extract the ZIP.
+2. Run `PodShift.exe`.
+3. If Windows SmartScreen warns about an unknown publisher, that is expected for the current unsigned alpha build.
+4. Pair your AirPods with Windows once using normal Bluetooth Settings if you have not done so before.
+5. Click **Find AirPods**, then **Connect to PC**.
+
+The build is self-contained. You do **not** need to install .NET separately.
 
 ## The problem
 
-AirPods are excellent at moving between Apple devices. Windows is less enthusiastic.
+AirPods move between Apple devices beautifully. Windows has apparently chosen character building instead.
 
-If your AirPods are connected to an iPhone and you want to use them on a Windows PC, the normal routine is usually:
+The normal Windows routine is usually:
 
 1. Open Settings.
 2. Open Bluetooth.
 3. Find the right device.
 4. Connect it.
-5. Repeat the ritual next time.
+5. Repeat next time.
 
-PodShift tries to reduce that to one small window and one click.
+PodShift turns that into a tiny window and one click.
 
-## What v0.2 does
+## What v0.2-alpha does
 
 - Finds AirPods among already-paired Bluetooth devices.
 - Prioritizes AirPods Pro, AirPods Max, and AirPods by name.
-- Shows the current Windows connection status.
-- Attempts one-click connection by resetting and re-enabling the A2DP stereo service.
-- Attempts one-click disconnect by disabling the A2DP stereo service.
-- Uses the actual local Bluetooth radio handle for the native Windows Bluetooth calls.
-- Waits for Windows to report the resulting connection state instead of assuming success.
-- Refreshes status when the app window becomes active again.
-- Falls back to Windows Bluetooth settings if the native operation cannot be completed.
+- Shows the current Windows connection state.
+- Performs one-click A2DP connect by resetting and re-enabling the stereo service.
+- Performs one-click disconnect by disabling the A2DP stereo service.
+- Uses the actual local Bluetooth radio handle for native Windows Bluetooth calls.
+- Waits for Windows to confirm the resulting connection state instead of assuming success.
+- Refreshes status when the app becomes active again.
+- Falls back to Windows Bluetooth Settings when the native operation cannot be completed.
+- Handles long AirPods names and Windows display scaling without clipping the lower controls.
 
 ## How it works
 
-Windows does not expose a simple public API such as `ConnectBluetoothAudioDevice(deviceId)` for an already-paired audio device.
+Windows does not expose a simple public call such as `ConnectBluetoothAudioDevice(deviceId)` for an already-paired audio device.
 
-PodShift therefore uses two layers:
+PodShift uses two layers:
 
-- **WinRT Bluetooth APIs** to discover paired devices, read their Bluetooth address, and check `ConnectionStatus`.
-- **Win32 Bluetooth APIs** from `bthprops.cpl` to locate the Bluetooth radio and toggle the A2DP service with `BluetoothSetServiceState`.
+- **WinRT Bluetooth APIs** for discovery, Bluetooth address lookup, and `ConnectionStatus`.
+- **Win32 Bluetooth APIs** from `bthprops.cpl` to locate the correct Bluetooth radio and toggle the A2DP service with `BluetoothSetServiceState`.
 
-For a connect attempt, PodShift currently:
+```mermaid
+flowchart LR
+    UI[PodShift UI] --> Service[BluetoothService]
+    Service --> WinRT[WinRT Bluetooth APIs]
+    Service --> Win32[Win32 Bluetooth APIs]
+    WinRT --> Device[Paired AirPods]
+    Win32 --> Radio[Local Bluetooth radio]
+    Radio --> A2DP[A2DP stereo service]
+    A2DP --> Device
+```
 
-1. Reads the AirPods Bluetooth address.
-2. Finds the local Bluetooth radio that knows the device.
-3. Disables the A2DP service.
-4. Waits one second.
-5. Enables A2DP again.
-6. Waits up to 10 seconds for Windows to report the AirPods as connected.
+### Connect sequence
 
-For disconnect, it disables A2DP and waits for Windows to report the device as disconnected.
+1. Read the AirPods Bluetooth address.
+2. Find the local Bluetooth radio that knows the device.
+3. Disable the A2DP service.
+4. Wait one second.
+5. Enable A2DP again.
+6. Wait up to 10 seconds for Windows to report the AirPods as connected.
 
-This is intentionally an **A2DP-first** implementation. Hands-Free / headset mode is not toggled in v0.2 because the first goal is reliable stereo audio switching.
+### Disconnect sequence
+
+1. Find the same Bluetooth device and radio.
+2. Disable A2DP.
+3. Wait for Windows to report the AirPods as disconnected.
+
+The current implementation is intentionally **A2DP-first**. Hands-Free/headset mode is not toggled because the first goal is reliable stereo audio switching.
 
 ## Requirements
 
-- Windows 10 or Windows 11.
-- x64 PC.
-- Working Bluetooth adapter/radio.
-- AirPods must already be paired with Windows once through the normal Bluetooth settings.
+- Windows 10 or Windows 11
+- x64 PC
+- Working Bluetooth adapter/radio
+- AirPods already paired with Windows at least once
 
 PodShift does **not** perform initial Bluetooth pairing.
 
-## Current limitations
+## Known limitations
 
-- One-click switching depends on the Windows Bluetooth stack and may behave differently with different Bluetooth adapters or drivers.
-- If another device is actively holding the AirPods connection, Windows may fail to take them within the timeout.
-- v0.2 automatically chooses the highest-scoring AirPods device it finds. There is no device picker yet.
-- Only the stereo A2DP path is targeted right now. Microphone / Hands-Free mode is not managed.
-- There is no tray icon yet.
-- The project does not yet have a polished installer or signed executable.
+- Reliability can vary with Bluetooth adapters, drivers, Windows builds, and AirPods models.
+- Another device may temporarily hold the AirPods connection and delay or prevent Windows from taking it.
+- The app currently selects the highest-scoring AirPods device automatically. There is no device picker yet.
+- Microphone / Hands-Free mode is not managed in v0.2-alpha.
+- The executable is not code-signed yet.
+- There is no installer or tray icon yet.
 
-If one-click fails, PodShift opens the normal Windows Bluetooth settings as a fallback.
-
-## Download
-
-For the current alpha builds:
-
-1. Open the **Actions** tab.
-2. Open the latest successful **Build PodShift for Windows** run.
-3. Download the `PodShift-win-x64` artifact.
-4. Extract the ZIP and run `PodShift.exe`.
-
-The GitHub Actions build is self-contained, so a separate .NET installation is not required.
-
-A normal GitHub Release with a ready-to-download executable is planned once the one-click behavior has been tested on more machines.
+If one-click switching fails, PodShift opens the normal Windows Bluetooth Settings as a fallback rather than pretending everything went splendidly.
 
 ## Build from source
 
-```bash
+```powershell
 git clone https://github.com/agbabenkov-del/PodShift.git
 cd PodShift
 dotnet restore PodShift.csproj
 dotnet build PodShift.csproj -c Release
 ```
 
-To create the same self-contained Windows build used by GitHub Actions:
+To create the same self-contained build used by GitHub Actions:
 
-```bash
-dotnet publish PodShift.csproj \
-  -c Release \
-  -r win-x64 \
-  --self-contained true \
-  -p:PublishSingleFile=true \
-  -p:IncludeNativeLibrariesForSelfExtract=true \
+```powershell
+dotnet publish PodShift.csproj `
+  -c Release `
+  -r win-x64 `
+  --self-contained true `
+  -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
   -o publish
 ```
 
@@ -118,37 +136,48 @@ dotnet publish PodShift.csproj \
 - WPF / XAML
 - Windows.Devices.Bluetooth / WinRT
 - Win32 Bluetooth APIs via P/Invoke
-- GitHub Actions for Windows builds
+- GitHub Actions
 
 The Bluetooth switching logic lives in [`BluetoothService.cs`](BluetoothService.cs).
 
 ## Roadmap
 
 - [x] Find paired AirPods
-- [x] Show connection status
-- [x] Experimental one-click A2DP connect
-- [x] Experimental one-click A2DP disconnect
-- [x] Automatic status refresh when returning to the app
-- [ ] Test reliability across more AirPods models, Windows versions, and Bluetooth adapters
-- [ ] Device picker for users with multiple AirPods
+- [x] Show connection state
+- [x] One-click A2DP connect
+- [x] One-click A2DP disconnect
+- [x] Automatic status refresh
+- [x] Responsive window sizing
+- [x] Self-contained Windows build
+- [x] Automated prerelease packaging
+- [ ] Test on more AirPods models, Windows versions, and Bluetooth adapters
+- [ ] Device picker for multiple AirPods
 - [ ] Tray icon and quick switching
-- [ ] Screenshot / demo GIF
-- [ ] Tagged GitHub releases with ready-to-run builds
-- [ ] Installer / code signing if the project grows beyond the tiny-utility stage
+- [ ] Optional Retro 95 skin
+- [ ] Installer and code signing
+- [ ] Demo GIF / polished screenshots
 
 ## Testing and feedback
 
-Real-world Bluetooth reports are especially useful. If you test PodShift, an issue containing the following is enough:
+Real-world Bluetooth reports are extremely useful. When reporting a problem, please include:
 
 - AirPods model
 - Windows version
 - Bluetooth adapter or laptop model, if known
-- Whether Connect worked
-- Whether Disconnect worked
-- What PodShift displayed if it failed
+- Whether **Connect** worked
+- Whether **Disconnect** worked
+- The exact message PodShift displayed if it failed
 
-Issues and pull requests are welcome.
+Use the repository's [issue templates](../../issues/new/choose) for bugs and feature requests.
+
+## Contributing
+
+Pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) before making larger changes.
 
 ## License
 
-A license file has not been added yet. Until one is added, the repository should not be treated as carrying an open-source license by default.
+PodShift is available under the [MIT License](LICENSE).
+
+## Trademark notice
+
+AirPods is a trademark of Apple Inc. PodShift is an independent project and is not affiliated with, endorsed by, or sponsored by Apple or Microsoft.

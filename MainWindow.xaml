@@ -76,7 +76,7 @@
 
             <TextBlock Grid.Row="4"
                        Margin="0,18,0,0"
-                       Text="PodShift 0.2 • One-click A2DP test"
+                       Text="PodShift 0.2 alpha"
                        HorizontalAlignment="Center"
                        FontSize="12"
                        Opacity="0.5"/>
